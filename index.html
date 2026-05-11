@@ -9,7 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入Font Awesome -->
     <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet">
-    <!-- SheetJS（xlsx）在 DOMContentLoaded 后由脚本动态加载，见正文内 loadXlsx -->
+    <!-- 引入SheetJS用于处理Excel文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <!-- 配置Tailwind自定义颜色和字体 -->
     <script>
@@ -461,30 +462,6 @@
         const animationContainer = document.getElementById('animation-container');
         const classSelect = document.getElementById('class-select');
 
-        const XLSX_SCRIPT_SRC = 'vendor/xlsx.full.min.js';
-        let xlsxLoadPromise = null;
-
-        function loadXlsx() {
-            if (typeof XLSX !== 'undefined') return Promise.resolve();
-            if (xlsxLoadPromise) return xlsxLoadPromise;
-            xlsxLoadPromise = new Promise((resolve, reject) => {
-                const s = document.createElement('script');
-                s.src = XLSX_SCRIPT_SRC;
-                s.async = true;
-                s.onload = () => resolve();
-                s.onerror = () => {
-                    xlsxLoadPromise = null;
-                    reject(new Error('SheetJS 加载失败'));
-                };
-                document.head.appendChild(s);
-            });
-            return xlsxLoadPromise;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadXlsx().catch(() => {});
-        });
-
         function populateClassSelect() {
             classSelect.innerHTML = '';
             const placeholder = document.createElement('option');
@@ -659,17 +636,10 @@
             }
         });
 
-        async function handleFile(file) {
+        function handleFile(file) {
             if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
                 !file.name.endsWith('.xlsx')) {
                 showToast('请上传.xlsx格式的Excel文件', 'error');
-                return;
-            }
-
-            try {
-                await loadXlsx();
-            } catch {
-                showToast('Excel 解析库加载失败，请检查网络后重试', 'error');
                 return;
             }
 
@@ -742,17 +712,11 @@
         });
 
         // 确认列选择并导入学生
-        confirmColumn.addEventListener('click', async () => {
+        confirmColumn.addEventListener('click', () => {
             const columnIndex = parseInt(columnSelect.value);
 
             // 重新读取文件以获取学生数据
             if (fileInput.files.length) {
-                try {
-                    await loadXlsx();
-                } catch {
-                    showToast('Excel 解析库加载失败，请检查网络后重试', 'error');
-                    return;
-                }
                 const file = fileInput.files[0];
                 const reader = new FileReader();
                 reader.onload = function (e) {
